@@ -1,5 +1,17 @@
 package jlox;
+//expression     → literal
+//               | unary
+//               | binary
+//               | grouping ;
+//
+//literal        → NUMBER | STRING | "true" | "false" | "nil" ;
+//grouping       → "(" expression ")" ;
+//unary          → ( "-" | "!" ) expression ;
+//binary         → expression operator expression ;
+//operator       → "==" | "!=" | "<" | "<=" | ">" | ">=" | "+"  | "-"  | "*" | "/" ;
 
+//import static jlox.Tokentype.MINUS;
+//import static jlox.Tokentype.STAR;
 
 public class Astprinter implements Expr.Visitor<String> {
     String print(Expr expr) {
