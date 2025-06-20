@@ -1,22 +1,31 @@
 package jlox;
-import com.sun.source.tree.BreakTree;
+
 
 import java.util.List;
-
 import static  jlox.Tokentype.*;
 public class Parser {
+    private static class ParseError extends RuntimeException{
+
+    }
     private final List<Token> tokens;
     private int current=0;
 
     Parser(List<Token> tokens){
         this.tokens=tokens;
     }
+    Expr parse(){
+        try{
+            return expression();
+        } catch (ParseError e) {
+            return null;
+        }
+    }
     private Expr expression(){
         return equality();
     }
     //equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     private Expr equality(){
-        Expr expr=new comparison();
+        Expr expr=comparison();
         while (match(BANG_EQUAL,EQUAL_EQUAL)){
             Token operator=previous();
             Expr right=comparison();
@@ -33,6 +42,12 @@ public class Parser {
             }
         }
         return false;
+    }
+    private  Token consume(Tokentype type,String message){
+        if(check(type)){
+           return advance();
+        }
+        throw error(peek(),message);
     }
     private boolean check(Tokentype type){
         if (isAtEnd()){
@@ -58,7 +73,30 @@ public class Parser {
     private Token previous(){
         return tokens.get(current-1);
     }
-
+    private ParseError error(Token token,String message){
+        jlox.error(token,message);
+        return new ParseError();
+    }
+    private void synchronize(){
+        advance();
+        while (!isAtEnd()){
+            if (previous().type==SEMICOLON){
+                return;
+            }
+            switch (peek().type){
+                case CLASS:
+                case FUN:
+                case VAR:
+                case FOR:
+                case IF:
+                case WHILE:
+                case PRINT:
+                case RETURN:
+                    return;
+            }
+            advance();
+        }
+    }
     //comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     private Expr comparison(){
         Expr expr=term();
@@ -122,6 +160,6 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
-
+        throw error(peek(),"Expected expression");
     }
 }
