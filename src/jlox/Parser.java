@@ -1,6 +1,7 @@
 package jlox;
+// Recursive-descent parser
 
-
+import java.util.ArrayList;
 import java.util.List;
 import static  jlox.Tokentype.*;
 public class Parser {
@@ -13,13 +14,32 @@ public class Parser {
     Parser(List<Token> tokens){
         this.tokens=tokens;
     }
-    Expr parse(){
-        try{
-            return expression();
-        } catch (ParseError e) {
-            return null;
+    List<Stmt> parse(){
+        List<Stmt> statements=new ArrayList<>();
+        while (!isAtEnd()){
+            statements.add(statement());
         }
+        return statements;
     }
+    private Stmt statement(){
+        if (match(PRINT)){
+            return printStatement();
+        }
+        return expressionStatement();
+    }
+
+    private Stmt printStatement(){
+        Expr value=expression();
+        consume(SEMICOLON,"Expected ';' after value");
+        return new Stmt.Print(value);
+    }
+
+    private Stmt expressionStatement(){
+        Expr value=expression();
+        consume(SEMICOLON,"Expected ';' after value");
+        return new Stmt.Expression(value);
+    }
+
     private Expr expression(){
         return equality();
     }
@@ -33,6 +53,7 @@ public class Parser {
         }
         return expr;
     }
+
 
     private boolean match(Tokentype... types){
         for (Tokentype type:types){

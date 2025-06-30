@@ -50,7 +50,8 @@ public class jlox {
         Scanner scanner=new Scanner(source);
         List<Token> tokens=scanner.scanTokens();
        Parser parser=new Parser(tokens);
-       Expr expression=parser.parse();
+     //  Expr expression=parser.parse();
+        List<Stmt> statements=parser.parse();
         if (hadError){
             return;
         }
@@ -58,7 +59,7 @@ public class jlox {
 //        for (Token token:tokens){
 //            System.out.println("Type:"+token.type+" lexeme"+token.lexeme+" literal:"+token.literal+" line:"+token.line);
 //        }
-        interpreter.interpret(expression);
+        interpreter.interpret(statements);
 
     }
 
