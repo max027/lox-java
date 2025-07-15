@@ -1,6 +1,8 @@
 package jlox;
 // Recursive-descent parser
 
+//program → declaration* EOF ;
+
 import java.util.ArrayList;
 import java.util.List;
 import static  jlox.Tokentype.*;
@@ -17,13 +19,43 @@ public class Parser {
     List<Stmt> parse(){
         List<Stmt> statements=new ArrayList<>();
         while (!isAtEnd()){
-            statements.add(statement());
+            statements.add(declarations());
         }
         return statements;
     }
+
+    //declaration    → varDecl | statement ;
+
+    private Stmt declarations(){
+        try {
+            if (match(VAR)){
+                return varDeclaration();
+            }
+            return statement();
+        }catch (ParseError error){
+            synchronize();
+            return null;
+        }
+    }
+
+    //varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
+    private Stmt varDeclaration(){
+        Token name=consume(IDENTIFIER,"Expected variable name");
+        Expr initializer=null;
+        if (match(EQUAL)){
+            initializer=expression();
+        }
+        consume(SEMICOLON,"Expect ';' after variable declaration");
+        return new Stmt.Var(name,initializer);
+    }
+
+    //statement      → exprStmt | printStmt ;
     private Stmt statement(){
         if (match(PRINT)){
             return printStatement();
+        }
+        if (match(LEFT_BRACE)){
+            return new Stmt.Block(block());
         }
         return expressionStatement();
     }
@@ -41,7 +73,23 @@ public class Parser {
     }
 
     private Expr expression(){
-        return equality();
+        return assignment();
+    }
+
+    private Expr assignment(){
+        Expr expr=equality();
+        if (match(EQUAL)){
+           Token equal=previous();
+           Expr value=assignment();
+
+           if (expr instanceof Expr.Variable){
+              Token name=((Expr.Variable)expr).name;
+              return new Expr.Assign(name,value);
+           }
+           error(equal,"Invalid assignment target");
+        }
+
+        return expr;
     }
     //equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     private Expr equality(){
@@ -176,11 +224,23 @@ public class Parser {
         if (match(NUMBER,STRING)){
             return new Expr.Literal(previous().literal);
         }
+        if (match(IDENTIFIER)){
+            return new Expr.Variable(previous());
+        }
         if (match(LEFT_PAREN)){
             Expr expr=expression();
             consume(RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
         throw error(peek(),"Expected expression");
+    }
+
+    private List<Stmt> block(){
+        List<Stmt> statements=new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()){
+            statements.add(declarations());
+        }
+        consume(RIGHT_BRACE,"Expected '}' after block");
+        return statements;
     }
 }
